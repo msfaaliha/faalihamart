@@ -1,0 +1,64 @@
+name: FaalihaMart CI
+
+on:
+  push:
+    branches: [ main, "feature/*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build, ASan/UBSan, and Tests
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Toolchain and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libsqlite3-dev \
+            libsodium-dev \
+            libssl-dev \
+            uuid-dev \
+            zlib1g-dev \
+            libgtest-dev \
+            clang-tidy \
+            cppcheck
+
+      - name: Install Drogon Framework
+        run: |
+          git clone https://github.com/drogonframework/drogon.git /tmp/drogon
+          cd /tmp/drogon
+          git submodule update --init
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF ..
+          sudo make install
+          sudo ldconfig
+
+      - name: Static Analysis Check
+        run: |
+          cppcheck --enable=warning,style,performance,portability \
+            --error-exitcode=1 \
+            --suppress=missingInclude \
+            src/
+
+      - name: Configure CMake with ASan & UBSan
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_ASAN=ON \
+            -DENABLE_UBSAN=ON
+
+      - name: Build Application and Tests
+        run: |
+          cmake --build build
+
+      - name: Run Test Suites (CTest)
+        run: |
+          ctest --test-dir build --output-on-failure

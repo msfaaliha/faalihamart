@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaalihaMart — Native C++ Marketplace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <a href="#" class="logo-area" onclick="switchTab('browse')">
+        <div class="logo-icon">F</div>
+        <span class="brand-title">FaalihaMart</span>
+      </a>
+
+      <!-- Search Box (F3) -->
+      <div class="search-box">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search headphones, monitor, hoodie, candle..." />
+      </div>
+
+      <!-- Actions -->
+      <div class="nav-actions">
+        <!-- Live Health Pill -->
+        <span id="health-badge" class="health-badge">
+          <span class="health-dot"></span> Checking server...
+        </span>
+
+        <!-- Demo Account Switcher (F1) -->
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <label for="user-switcher" style="font-size: 0.8rem; font-weight: 600; color: var(--gray-500);">Role:</label>
+          <select id="user-switcher" class="form-control" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" onchange="setCurrentUser(this.value)">
+            <option value="4">Buyer: Alice Smith</option>
+            <option value="5">Buyer: Bob Jones</option>
+            <option value="2">Seller: Apex Tech Gear</option>
+            <option value="3">Seller: Urban Trendz</option>
+            <option value="1">Admin: Faaliha</option>
+          </select>
+        </div>
+
+        <!-- Cart Button (F4) -->
+        <button class="nav-btn cart-btn" onclick="openModal('cart-modal'); renderCartModal();">
+          🛒 Cart
+          <span id="cart-count" class="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs Navigation -->
+  <nav class="tabs-bar">
+    <div class="tabs-container">
+      <button class="tab-btn active" data-tab="browse" onclick="switchTab('browse')">🛍️ Browse Catalog</button>
+      <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">📦 My Orders</button>
+      <button class="tab-btn" id="tab-seller" data-tab="seller" onclick="switchTab('seller')" style="display: none;">🏪 Seller Dashboard</button>
+      <button class="tab-btn" id="tab-admin" data-tab="admin" onclick="switchTab('admin')" style="display: none;">⚙️ Admin Console</button>
+    </div>
+  </nav>
+
+  <!-- View 1: Catalog & Browse (F3) -->
+  <div id="view-browse">
+    <!-- Category Filter Chips -->
+    <div class="category-bar">
+      <button class="cat-chip active" data-category="ALL">All Categories</button>
+      <button class="cat-chip" data-category="Electronics">Electronics</button>
+      <button class="cat-chip" data-category="Apparel">Apparel</button>
+      <button class="cat-chip" data-category="Home & Living">Home & Living</button>
+    </div>
+
+    <!-- Main Products Grid -->
+    <main>
+      <div id="product-grid" class="product-grid">
+        <!-- Injected via JavaScript -->
+      </div>
+    </main>
+  </div>
+
+  <!-- View 2: Buyer Order History (F6, O2, F8) -->
+  <div id="view-orders" style="display: none;">
+    <main>
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 800;">My Order History</h2>
+        <p style="color: var(--gray-500); font-size: 0.9rem;">Track your recent purchases and leave reviews on completed orders.</p>
+      </div>
+      <div id="orders-list-container">
+        <!-- Injected via JavaScript -->
+      </div>
+    </main>
+  </div>
+
+  <!-- View 3: Seller Dashboard (F2, O3, O2) -->
+  <div id="view-seller" style="display: none;">
+    <main>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.5rem; font-weight: 800;">Seller Dashboard</h2>
+          <p style="color: var(--gray-500); font-size: 0.9rem;">Manage product listings, monitor incoming orders, and review sales revenue.</p>
+        </div>
+        <button class="nav-btn btn-primary" onclick="openCreateProductModal()">+ Add New Product</button>
+      </div>
+
+      <!-- Seller Analytics (O3) -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Active Listings</div>
+          <div id="seller-stat-listings" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Customer Orders</div>
+          <div id="seller-stat-orders" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div id="seller-stat-revenue" class="stat-value">₹0.00</div>
+        </div>
+      </div>
+
+      <!-- Listings Table -->
+      <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Your Product Listings</h3>
+      <div style="background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-300); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="seller-listings-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Incoming Orders for Seller -->
+      <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Incoming Customer Orders</h3>
+      <div style="background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-300); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Status Workflow</th>
+            </tr>
+          </thead>
+          <tbody id="seller-orders-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- View 4: Admin Console (F7) -->
+  <div id="view-admin" style="display: none;">
+    <main>
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 800;">Admin Console & Oversight</h2>
+        <p style="color: var(--gray-500); font-size: 0.9rem;">Platform-wide administration, user management, and order auditing.</p>
+      </div>
+
+      <!-- Admin Overview Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Users</div>
+          <div id="admin-stat-users" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Sellers</div>
+          <div id="admin-stat-sellers" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Registered Buyers</div>
+          <div id="admin-stat-buyers" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Products</div>
+          <div id="admin-stat-products" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Orders</div>
+          <div id="admin-stat-orders" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Platform Gross Volume</div>
+          <div id="admin-stat-revenue" class="stat-value">₹0.00</div>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Registered Platform Users</h3>
+      <div style="background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-300); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Platform Orders Audit -->
+      <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">All Marketplace Orders</h3>
+      <div style="background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-300); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Buyer</th>
+              <th>Date</th>
+              <th>Total Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="admin-orders-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Shopping Cart Modal (F4) -->
+  <div id="cart-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Shopping Cart</h3>
+        <button class="modal-close" onclick="closeModal('cart-modal')">&times;</button>
+      </div>
+      <div class="modal-body" id="cart-items-container">
+        <!-- Injected via JavaScript -->
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="color: var(--gray-500); font-size: 0.85rem;">Running Total:</span>
+          <div id="cart-running-total" style="font-size: 1.4rem; font-weight: 800; color: var(--primary);">₹0.00</div>
+        </div>
+        <button id="cart-checkout-btn" class="nav-btn btn-primary" onclick="openCheckoutModal()">Proceed to Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal (F5 Mock Payment) -->
+  <div id="checkout-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Order Checkout</h3>
+        <button class="modal-close" onclick="closeModal('checkout-modal')">&times;</button>
+      </div>
+      <form onsubmit="processCheckout(event)">
+        <div class="modal-body">
+          <div style="background: var(--primary-light); padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
+            <div style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">Mock Payment Authorization</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--dark);" id="checkout-amount">₹0.00</div>
+            <small style="color: var(--gray-500);">Scope constraint: Checkout utilizes simulated mock payment verification.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="shipping-address">Delivery / Shipping Address</label>
+            <textarea id="shipping-address" class="form-control" rows="3" required placeholder="e.g. 124 Marketplace Avenue, Apt 4B, Chennai, India"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Payment Method</label>
+            <div style="display: flex; gap: 0.75rem;">
+              <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem;">
+                <input type="radio" name="payment_method" value="MOCK_CREDIT_CARD" checked /> Mock Credit Card
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem;">
+                <input type="radio" name="payment_method" value="MOCK_UPI" /> Mock UPI / Net Banking
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="nav-btn btn-outline" onclick="closeModal('checkout-modal')">Cancel</button>
+          <button type="submit" class="nav-btn btn-primary">Authorize & Confirm Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Product Detail Modal (F3, F8) -->
+  <div id="detail-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Product Details</h3>
+        <button class="modal-close" onclick="closeModal('detail-modal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Review Modal (F8) -->
+  <div id="review-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Write a Product Review</h3>
+        <button class="modal-close" onclick="closeModal('review-modal')">&times;</button>
+      </div>
+      <form onsubmit="submitReview(event)">
+        <div class="modal-body">
+          <p style="margin-bottom: 1rem; color: var(--gray-700);">
+            Reviewing: <strong id="review-product-name">Product</strong>
+          </p>
+          <div class="form-group">
+            <label for="review-rating">Rating (1 to 5 Stars)</label>
+            <select id="review-rating" class="form-control">
+              <option value="5">⭐⭐⭐⭐⭐ (5 - Outstanding)</option>
+              <option value="4">⭐⭐⭐⭐ (4 - Very Good)</option>
+              <option value="3">⭐⭐⭐ (3 - Average)</option>
+              <option value="2">⭐⭐ (2 - Below Expectations)</option>
+              <option value="1">⭐ (1 - Poor)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="review-comment">Your Review Comments</label>
+            <textarea id="review-comment" class="form-control" rows="4" required placeholder="Share your experience with this item..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="nav-btn btn-outline" onclick="closeModal('review-modal')">Cancel</button>
+          <button type="submit" class="nav-btn btn-primary">Submit Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Seller Create / Edit Product Modal (F2) -->
+  <div id="product-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="product-modal-title" class="modal-title">Create New Listing</h3>
+        <button class="modal-close" onclick="closeModal('product-modal')">&times;</button>
+      </div>
+      <form onsubmit="saveProductListing(event)">
+        <div class="modal-body">
+          <input type="hidden" id="product-form-id" />
+          <div class="form-group">
+            <label for="product-form-name">Product Name *</label>
+            <input type="text" id="product-form-name" class="form-control" required placeholder="e.g. Wireless Noise Cancelling Earbuds" />
+          </div>
+          <div class="form-group">
+            <label for="product-form-category">Category *</label>
+            <select id="product-form-category" class="form-control">
+              <option value="Electronics">Electronics</option>
+              <option value="Apparel">Apparel</option>
+              <option value="Home & Living">Home & Living</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+              <label for="product-form-price">Price (INR ₹) *</label>
+              <input type="number" step="0.01" min="0.50" id="product-form-price" class="form-control" required placeholder="49.99" />
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="product-form-stock">Stock Quantity *</label>
+              <input type="number" min="0" id="product-form-stock" class="form-control" required placeholder="20" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="product-form-image">Image URL</label>
+            <input type="url" id="product-form-image" class="form-control" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label for="product-form-desc">Description</label>
+            <textarea id="product-form-desc" class="form-control" rows="3" placeholder="Key specs, features, and benefits..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="nav-btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
+          <button type="submit" class="nav-btn btn-primary">Save Listing</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div><strong>FaalihaMart</strong> &copy; 2026. Native C++20 Marketplace Web Application (Drogon &middot; SQLite &middot; PostgreSQL).</div>
+      <div style="font-size: 0.8rem; color: var(--gray-500);">Milestone Checkpoint: September 21 (2nd Review)</div>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

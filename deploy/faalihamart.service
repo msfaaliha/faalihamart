@@ -1,0 +1,25 @@
+[Unit]
+Description=FaalihaMart Native C++ Marketplace Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=faalihamart
+Group=faalihamart
+WorkingDirectory=/opt/faalihamart
+ExecStart=/opt/faalihamart/bin/faalihamart /opt/faalihamart/config.json
+Restart=always
+RestartSec=5s
+
+# Security sandboxing
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Environment
+Environment=LOG_LEVEL=info
+Environment=DATABASE_FILE=/opt/faalihamart/data/faalihamart.db
+
+[Install]
+WantedBy=multi-user.target
