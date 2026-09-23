@@ -28,6 +28,7 @@ jobs:
             uuid-dev \
             zlib1g-dev \
             libgtest-dev \
+            libjsoncpp-dev \
             clang-tidy \
             cppcheck
 
@@ -37,13 +38,18 @@ jobs:
           cd /tmp/drogon
           git submodule update --init
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF ..
+          cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_TESTING=OFF \
+            ..
           sudo make install
           sudo ldconfig
 
       - name: Static Analysis Check
         run: |
-          cppcheck --enable=warning,style,performance,portability \
+          cppcheck \
+            --enable=warning,style,performance,portability \
             --error-exitcode=1 \
             --suppress=missingInclude \
             src/
