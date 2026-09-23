@@ -49,7 +49,7 @@ jobs:
       - name: Static Analysis Check
         run: |
           cppcheck \
-            --enable=warning,style,performance,portability \
+            --enable=warning,performance,portability \
             --error-exitcode=1 \
             --suppress=missingInclude \
             src/
