@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     uuid-dev \
     zlib1g-dev \
+    libjsoncpp-dev \
     nlohmann-json3-dev \
     libspdlog-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -51,9 +52,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     libsodium23 \
     libssl3 \
+    libuuid1 \
+    zlib1g \
+    libjsoncpp25 \
+    libspdlog1.10 \
     ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy Drogon and Trantor shared libraries installed in builder
+COPY --from=builder /usr/local/lib /usr/local/lib
+RUN ldconfig
 
 # Create application user for security
 RUN useradd -m -u 1001 -s /bin/bash faalihamart

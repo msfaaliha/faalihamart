@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
         if (port_env) {
             try {
                 int p = std::stoi(port_env);
-                if (p > 0 && p <= 65535) {
+                if (p > 0 && p <= 65535 && p != 8080) {
                     spdlog::info("PORT environment variable detected. Adding listener on 0.0.0.0:{}", p);
                     drogon::app().addListener("0.0.0.0", static_cast<uint16_t>(p));
                 }
