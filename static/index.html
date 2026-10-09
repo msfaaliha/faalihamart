@@ -234,6 +234,28 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Platform Listings Moderation (F7) -->
+      <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Listing Moderation & Marketplace Oversight</h3>
+      <div style="background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-300); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Image</th>
+              <th>Product Name</th>
+              <th>Seller</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Admin Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-listings-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </main>
   </div>
 
@@ -401,9 +423,54 @@
   <footer>
     <div style="max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
       <div><strong>FaalihaMart</strong> &copy; 2026. Native C++20 Marketplace Web Application (Drogon &middot; SQLite &middot; PostgreSQL).</div>
-      <div style="font-size: 0.8rem; color: var(--gray-500);">Milestone Checkpoint: September 21 (2nd Review)</div>
+      <div style="font-size: 0.8rem; color: var(--gray-500);">Milestone Checkpoint: Final Review (October 10, 2026)</div>
     </div>
   </footer>
+
+  <!-- AI Chatbot Floating Widget (Section 9, 15) -->
+  <div id="chat-widget-container">
+    <button id="chat-fab" class="chat-fab" onclick="toggleChatWindow()" title="Chat with FaalihaMart AI Assistant">
+      <span class="chat-fab-icon">💬</span>
+      <span class="chat-fab-badge">AI</span>
+    </button>
+
+    <div id="chat-panel" class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-avatar">🤖</div>
+          <div>
+            <div class="chat-title">FaalihaMart AI Assistant</div>
+            <div class="chat-subtitle"><span class="chat-status-dot"></span> <span id="chat-provider-badge">Gemini / FAQ Engine</span></div>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button class="chat-tool-btn" onclick="clearChatHistory()" title="Clear Conversation">🗑️</button>
+          <button class="chat-tool-btn" onclick="toggleChatWindow()" title="Close Chat">&times;</button>
+        </div>
+      </div>
+
+      <div class="chat-suggestions-bar">
+        <button class="chat-chip" onclick="sendSuggestion('What popular electronics do you have?')">🎧 Electronics</button>
+        <button class="chat-chip" onclick="sendSuggestion('How does order tracking work?')">📦 Track Order</button>
+        <button class="chat-chip" onclick="sendSuggestion('What payment methods are supported?')">💳 Payments</button>
+        <button class="chat-chip" onclick="sendSuggestion('What is your refund policy?')">↩️ Returns</button>
+        <button class="chat-chip" onclick="sendSuggestion('How can I become a seller?')">🏪 Sell Items</button>
+      </div>
+
+      <div id="chat-messages" class="chat-messages">
+        <!-- Message bubbles injected via JavaScript -->
+      </div>
+
+      <form id="chat-form" class="chat-input-area" onsubmit="handleChatSubmit(event)">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Ask about products, orders, returns..." maxlength="500" required autocomplete="off" />
+        <button type="submit" id="chat-send-btn" class="chat-send-btn" title="Send Message">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
 </body>

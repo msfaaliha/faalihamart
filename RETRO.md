@@ -32,3 +32,10 @@ Following Section 14 of the Engineering Specification, each ~2-week sprint captu
 - **What worked**: Zero findings with AddressSanitizer and UndefinedBehaviorSanitizer; multi-stage Docker build reduced the deployment runtime container footprint to under 120MB; health check endpoint verified uptime.
 - **What didn't**: Nginx reverse proxy buffering large request bodies needed explicit `client_max_body_size` configuration.
 - **One change for next sprint**: Implement automated rate limiting and in-memory caching as specified in Phase 3 for the AI chatbot integration.
+
+---
+
+### Sprint 5 (Weeks 9 – 11: Sep 21 – Oct 10, 2026) — AI Chatbot, Polish & Final Review
+- **What worked**: ChatProvider interface pattern cleanly decoupled mock and Gemini providers; in-memory sliding window rate limiter (10 msg/min) and session caching prevented API exhaustion; floating chat UI with FAQ suggestion chips integrated smoothly with backend and dual-mode fallback; admin listing moderation added seamlessly.
+- **What didn't**: Handling outbound HTTP requests asynchronously without blocking event threads required wrapping provider calls with explicit timeout guards.
+- **One change for next sprint / post-launch**: Expand multi-turn conversational session history persistence in PostgreSQL for authenticated user accounts.

@@ -1,7 +1,8 @@
 {
   "name": "faalihamart",
-  "version-string": "1.0.0",
+  "version-string": "1.1.0",
   "description": "Native C++20 Marketplace Web Application Backend",
+  "builtin-baseline": "98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8",
   "dependencies": [
     "drogon",
     "sqlite3",

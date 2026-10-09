@@ -802,6 +802,60 @@ function renderAdminPanel() {
     `;
     ordersTbody.appendChild(tr);
   });
+
+  // Render listing moderation table (F7)
+  renderAdminListingsTable();
+}
+
+function renderAdminListingsTable() {
+  const listingsTbody = document.getElementById("admin-listings-tbody");
+  if (!listingsTbody) return;
+  listingsTbody.innerHTML = "";
+
+  if (!state.db.products || state.db.products.length === 0) {
+    listingsTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--gray-500); padding: 1.5rem;">No product listings in marketplace.</td></tr>`;
+    return;
+  }
+
+  state.db.products.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.id}</td>
+      <td><img src="${p.image_url}" alt="${p.name}" style="width: 36px; height: 36px; border-radius: 4px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'" /></td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.seller_name || "Seller #" + p.seller_id}</td>
+      <td><span class="status-badge" style="background: var(--primary-light); color: var(--primary);">${p.category}</span></td>
+      <td><strong>${p.price_formatted || ("₹" + (p.price_cents / 100).toFixed(2))}</strong></td>
+      <td>${p.stock_qty}</td>
+      <td>
+        <button class="btn-moderate-danger" onclick="adminModerateListing(${p.id})">Moderate / Remove</button>
+      </td>
+    `;
+    listingsTbody.appendChild(tr);
+  });
+}
+
+async function adminModerateListing(productId) {
+  if (!confirm(`ADMIN MODERATION: Are you sure you want to remove listing #${productId} from the marketplace?`)) {
+    return;
+  }
+
+  if (state.isBackendOnline) {
+    try {
+      const res = await fetch(`/api/v1/products/${productId}`, { method: "DELETE" });
+      if (res.ok) {
+        showToast("Admin successfully moderated and removed listing", "success");
+      }
+    } catch (e) {
+      console.warn("Backend moderation call error", e);
+    }
+  }
+
+  state.db.products = state.db.products.filter(p => p.id !== productId);
+  state.save();
+  showToast(`Listing #${productId} removed from catalog by Admin`, "success");
+  renderAdminPanel();
+  renderProducts();
 }
 
 // Modal Helpers
@@ -813,6 +867,236 @@ function openModal(id) {
 function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.remove("open");
+}
+
+// =========================================================================
+// AI Chatbot Frontend Controller (Section 9, 15)
+// =========================================================================
+const chatState = {
+  isOpen: false,
+  messages: [
+    {
+      sender: "bot",
+      text: "Hello! Welcome to FaalihaMart. I am your AI Shopping Assistant. Ask me about products in Electronics, Apparel, or Home & Living, order tracking, returns, mock payment, or selling on our marketplace!",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      provider: "FAQ / Gemini",
+      cached: false
+    }
+  ]
+};
+
+function toggleChatWindow() {
+  const panel = document.getElementById("chat-panel");
+  if (!panel) return;
+  chatState.isOpen = !chatState.isOpen;
+  panel.classList.toggle("open", chatState.isOpen);
+  if (chatState.isOpen) {
+    renderChatMessages();
+    setTimeout(() => {
+      const input = document.getElementById("chat-input");
+      if (input) input.focus();
+    }, 150);
+  }
+}
+
+function clearChatHistory() {
+  chatState.messages = [
+    {
+      sender: "bot",
+      text: "Conversation cleared. How can I assist your shopping on FaalihaMart today?",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      provider: "FaalihaMart AI",
+      cached: false
+    }
+  ];
+  renderChatMessages();
+  showToast("Chat history cleared");
+}
+
+function renderChatMessages() {
+  const container = document.getElementById("chat-messages");
+  if (!container) return;
+
+  container.innerHTML = "";
+  chatState.messages.forEach(msg => {
+    const bubble = document.createElement("div");
+    bubble.className = `chat-msg ${msg.sender}`;
+    
+    let metaHtml = `<div class="chat-msg-meta"><span>${msg.time}</span>`;
+    if (msg.sender === "bot") {
+      if (msg.cached) {
+        metaHtml += `<span class="chat-badge-tag" style="background:#e0f2fe; color:#0369a1;">CACHED</span>`;
+      }
+      metaHtml += `<span class="chat-badge-tag">${msg.provider || "AI"}</span>`;
+    }
+    metaHtml += `</div>`;
+
+    bubble.innerHTML = `<div>${escapeHtml(msg.text)}</div>${metaHtml}`;
+    container.appendChild(bubble);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.innerText = text;
+  return div.innerHTML;
+}
+
+function sendSuggestion(queryText) {
+  const input = document.getElementById("chat-input");
+  if (input) {
+    input.value = queryText;
+    handleChatSubmit(new Event("submit"));
+  }
+}
+
+async function handleChatSubmit(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  const input = document.getElementById("chat-input");
+  if (!input) return;
+
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  if (userText.length > 500) {
+    showToast("Message exceeds 500 characters limit", "danger");
+    return;
+  }
+
+  // Add user message
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  chatState.messages.push({
+    sender: "user",
+    text: userText,
+    time: timeStr
+  });
+  input.value = "";
+  renderChatMessages();
+
+  // Show typing indicator
+  const container = document.getElementById("chat-messages");
+  const typingBubble = document.createElement("div");
+  typingBubble.id = "chat-typing-bubble";
+  typingBubble.className = "chat-msg bot";
+  typingBubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  container.appendChild(typingBubble);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    let botReply = "";
+    let providerName = "mock";
+    let wasCached = false;
+
+    // 1. Attempt Live C++ Drogon Backend call (POST /api/v1/chat or /api/chat)
+    let fetched = false;
+    try {
+      const resp = await fetch("/api/v1/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText })
+      });
+
+      if (resp.status === 429) {
+        throw new Error("Rate limit exceeded (10 messages per minute). Please wait a moment.");
+      }
+
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json && json.success && json.data) {
+          botReply = json.data.reply;
+          providerName = json.data.provider || "gemini";
+          wasCached = json.data.cached || false;
+          fetched = true;
+        }
+      }
+    } catch (networkErr) {
+      if (networkErr.message && networkErr.message.includes("Rate limit")) {
+        throw networkErr;
+      }
+      // Server offline or in preview mode: proceed to local domain fallback engine
+    }
+
+    // 2. If backend offline or preview mode, run local intelligent domain engine (mirrors MockChatProvider)
+    if (!fetched) {
+      await new Promise(r => setTimeout(r, 400)); // natural typing pause
+      botReply = getLocalBotReply(userText);
+      providerName = "FAQ Engine";
+      wasCached = false;
+    }
+
+    // Remove typing indicator
+    const typingElem = document.getElementById("chat-typing-bubble");
+    if (typingElem) typingElem.remove();
+
+    // Append bot message
+    chatState.messages.push({
+      sender: "bot",
+      text: botReply,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      provider: providerName,
+      cached: wasCached
+    });
+    renderChatMessages();
+
+  } catch (err) {
+    const typingElem = document.getElementById("chat-typing-bubble");
+    if (typingElem) typingElem.remove();
+
+    chatState.messages.push({
+      sender: "bot",
+      text: `Notice: ${err.message || "Failed to process chat message."}`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      provider: "System Guard",
+      cached: false
+    });
+    renderChatMessages();
+  }
+}
+
+// Local intelligent FAQ answer database (mirrors C++ MockChatProvider)
+function getLocalBotReply(query) {
+  const q = query.toLowerCase();
+
+  if (q.includes("hello") || q.includes("hi") || q.includes("hey") || q.includes("who are you")) {
+    return "Hello! Welcome to FaalihaMart. I am your AI Marketplace Assistant. I can help you find products across Electronics, Apparel, and Home & Living, track your orders, explain our mock checkout, or assist with seller listings. How may I help you today?";
+  }
+  if (q.includes("headphone") || q.includes("audio") || q.includes("noise-cancelling") || q.includes("earphone")) {
+    return "We have the 'Noise-Cancelling Wireless Headphones' by Apex Tech Gear for ₹149.99 (40-hour battery life, spatial audio). Check out the Electronics category to add it to your cart!";
+  }
+  if (q.includes("keyboard") || q.includes("gaming keyboard") || q.includes("mechanical") || q.includes("rgb")) {
+    return "The 'Mechanical Gaming Keyboard RGB' is available for ₹89.99 with custom mechanical switches, RGB backlighting, and a detachable braided USB-C cable.";
+  }
+  if (q.includes("monitor") || q.includes("screen") || q.includes("display") || q.includes("4k")) {
+    return "Check out the 'Ultra-Slim 4K USB-C Monitor 27\"' by Apex Tech Gear for ₹299.99 featuring an IPS panel, 99% sRGB color gamut, and 65W power delivery.";
+  }
+  if (q.includes("hoodie") || q.includes("jacket") || q.includes("apparel") || q.includes("clothing") || q.includes("cotton")) {
+    return "Our 'Classic Organic Cotton Hoodie' is available for ₹49.99 tailored from heavyweight 100% sustainable organic cotton. Available in the Apparel category!";
+  }
+  if (q.includes("backpack") || q.includes("bag") || q.includes("commuter") || q.includes("laptop bag")) {
+    return "We offer the 'Waterproof Commuter Backpack' for ₹74.99 with weatherproof fabric and a dedicated padded 16-inch laptop compartment.";
+  }
+  if (q.includes("candle") || q.includes("tumbler") || q.includes("home") || q.includes("living")) {
+    return "In Home & Living, we have the 'Aromatic Soy Wax Candle Set' (₹24.99) and the 'Insulated Stainless Steel Tumbler 32oz' (₹19.99, keeps drinks cold 24h).";
+  }
+  if (q.includes("track") || q.includes("status") || q.includes("order status") || q.includes("workflow") || q.includes("delivery") || q.includes("where is my order")) {
+    return "FaalihaMart orders follow a strict workflow: PENDING → CONFIRMED → SHIPPED → DELIVERED. You can view real-time status and line items in the 'My Orders' tab.";
+  }
+  if (q.includes("return") || q.includes("refund") || q.includes("exchange") || q.includes("policy")) {
+    return "FaalihaMart offers a 7-day return policy on any delivered order. Once an order reaches DELIVERED status, you can also leave a verified product review and 1-5 star rating.";
+  }
+  if (q.includes("payment") || q.includes("pay") || q.includes("credit card") || q.includes("upi") || q.includes("checkout") || q.includes("mock payment")) {
+    return "FaalihaMart checkout uses a simulated mock payment authorization step (Mock Credit Card or Mock UPI). No real money is charged during this capstone demonstration.";
+  }
+  if (q.includes("sell") || q.includes("seller") || q.includes("list product") || q.includes("listing") || q.includes("vendor")) {
+    return "To sell products, switch to a Seller role in the header dropdown. You will unlock the 'Seller Dashboard' where you can create, update, or remove listings and view sales analytics!";
+  }
+  if (q.includes("review") || q.includes("rating") || q.includes("star")) {
+    return "Customers who have purchased an item can submit a 1 to 5 star rating and comment after the order has reached the DELIVERED status.";
+  }
+
+  return "Thank you for asking! FaalihaMart offers electronics, apparel, and home essentials. You can search products above, manage your cart, track orders (PENDING → CONFIRMED → SHIPPED → DELIVERED), or switch to Seller mode to list items. Is there a specific product or order you'd like help with?";
 }
 
 // Global Event Handlers Initialization

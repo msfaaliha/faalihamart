@@ -42,6 +42,14 @@
   ],
   "custom_config": {
     "app_name": "FaalihaMart",
-    "environment": "development"
+    "environment": "development",
+    "ai": {
+      "chatbot": {
+        "provider": "mock",
+        "model": "gemini-1.5-flash",
+        "timeout_seconds": 10,
+        "rate_limit_per_minute": 10
+      }
+    }
   }
 }

@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     spdlog::info("=================================================");
     spdlog::info("   FaalihaMart Native C++ Marketplace Backend    ");
-    spdlog::info("   Target Milestone: September 21 (2nd Review)  ");
+    spdlog::info("   Target Milestone: Final Review (Oct 10, 2026) ");
     spdlog::info("   Namespace: faaliha::faalihamart               ");
     spdlog::info("=================================================");
 
@@ -48,7 +48,19 @@ int main(int argc, char* argv[]) {
         // Ensure static directory is served
         drogon::app().setDocumentRoot("./static");
 
-        spdlog::info("Starting FaalihaMart Drogon HTTP server on http://localhost:8080");
+        // Allow PORT environment variable override (e.g. on Render or cloud container platforms)
+        const char* port_env = std::getenv("PORT");
+        if (port_env) {
+            try {
+                int p = std::stoi(port_env);
+                if (p > 0 && p <= 65535) {
+                    spdlog::info("PORT environment variable detected. Adding listener on 0.0.0.0:{}", p);
+                    drogon::app().addListener("0.0.0.0", static_cast<uint16_t>(p));
+                }
+            } catch (...) {}
+        }
+
+        spdlog::info("Starting FaalihaMart Drogon HTTP server...");
         drogon::app().run();
     } catch (const std::exception& e) {
         spdlog::critical("Server terminated with unhandled exception: {}", e.what());

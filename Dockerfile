@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for FaalihaMart (Section 8 Deployment Specification)
+# Multi-stage Dockerfile for FaalihaMart (Native C++20 Drogon Marketplace)
 # Stage 1: Build stage with full C++20 toolchain and dependencies
 FROM debian:bookworm-slim AS builder
 

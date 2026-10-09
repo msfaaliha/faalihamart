@@ -4,7 +4,7 @@
 [![Standard](https://img.shields.io/badge/c%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B20)
 [![Framework](https://img.shields.io/badge/framework-Drogon-red.svg)](https://drogon.org)
 [![Database](https://img.shields.io/badge/database-SQLite%20%7C%20PostgreSQL-green.svg)](https://sqlite.org)
-[![Milestone](https://img.shields.io/badge/milestone-Sep%2021%20(2nd%20Review)-orange.svg)](#milestone-status)
+[![Milestone](https://img.shields.io/badge/milestone-Oct%2010%20(Final%20Review)-brightgreen.svg)](#milestone-status)
 
 **FaalihaMart** (namespace `faaliha::faalihamart`) is a high-performance multi-seller e-commerce marketplace web application served by a native C++20 HTTP backend using **Drogon**, SQLite/PostgreSQL, `spdlog`, and modern frontend technologies.
 
@@ -18,7 +18,7 @@ You can view and interact with the full web marketplace immediately:
 1. Navigate to `faalihamart/` in File Explorer or your terminal.
 2. Double-click **`start_preview.bat`** (or execute `.\start_preview.ps1` in PowerShell).
 3. The server starts at **`http://localhost:8080/index.html`** and opens your browser.
-4. Alternatively, you can open **`static/index.html`** directly in any modern browser. The application includes a self-contained interactive state engine with pre-seeded demo accounts!
+4. Alternatively, you can open **`static/index.html`** directly in any modern browser. The application includes a self-contained interactive state engine, pre-seeded demo accounts, and integrated AI assistant!
 
 ### Option B: Native C++ Drogon HTTP Server
 ```bash
@@ -30,7 +30,7 @@ Visit `http://localhost:8080/index.html`.
 
 ---
 
-## 2. Milestone Deliverables (Up to September 21 / 2nd Review)
+## 2. Milestone Deliverables (Final Review — October 10, 2026)
 
 | ID | Feature Requirement | Status | Verification |
 |---|---|---|---|
@@ -40,10 +40,11 @@ Visit `http://localhost:8080/index.html`.
 | **F4** | Cart: add, update, remove items; running total | Completed | Stock validation, dynamic totals, running total display |
 | **F5** | Checkout: place order from cart via mock payment | Completed | Mock payment confirmation, ACID transaction, stock decrement |
 | **F6** | Order history: buyer past orders; seller incoming orders | Completed | Order status tracking, order line items |
-| **F7** | Admin: view all users, orders; moderate listings | Completed | Admin dashboard, user table, platform revenue |
+| **F7** | Admin: view all users, orders; moderate listings | Completed | Admin dashboard, user table, platform revenue, listing moderation table |
 | **F8** | Product reviews and star ratings on completed orders | Completed | Verification of DELIVERED status, 1-5 star ratings |
 | **O2** | Order status workflow (`PENDING` → `CONFIRMED` → `SHIPPED` → `DELIVERED`) | Completed | Dynamic status progression, seller controls |
 | **O3** | Seller sales dashboard (order counts, revenue totals) | Completed | Revenue calculation, active vs completed order metrics |
+| **O4** | **AI Chatbot** (Gemini Live API + Mock Provider, rate limits, caching, UI) | **Completed** | `ChatProvider` interface, `MockChatProvider`, `GeminiChatProvider`, `ChatService`, `ChatController`, floating widget |
 | **Deploy** | Docker multi-stage build, systemd service, Nginx reverse proxy | Completed | Production deployment bundle in `deploy/` |
 
 ---
@@ -134,4 +135,47 @@ Test suites include:
 - `AuthServiceTest`: User registration, login verification, duplicate email conflict handling.
 - `ProductServiceTest`: Ownership checks and seller permissions.
 - `CartServiceTest`: Inventory limits and running totals.
-- `SQLiteUserRepositoryTest` & `SQLiteProductRepositoryTest`: Real parameterized SQL execution against `:memory:` SQLite.
+- `OrderServiceTest`: Cart checkout, mock payment strategy, and status workflow transitions (`PENDING` → `CONFIRMED` → `SHIPPED` → `DELIVERED`).
+- `ReviewServiceTest`: Rating boundaries (1-5 stars) and verified delivered order purchase enforcement.
+- `AdminServiceTest`: Admin authorization check, platform revenue aggregation, and seller analytics.
+- `ChatServiceTest`: AI chatbot input validation, 10 msg/min per-session rate limiting, and response caching.
+- `SQLiteUserRepositoryTest`: Real parameterized SQL execution against `:memory:` SQLite.
+- `SQLiteProductRepositoryTest`: Dynamic SQL filter binding and atomic stock decrement against `:memory:` SQLite.
+- `SQLiteCartRepositoryTest`: Shopping cart CRUD and user isolation against `:memory:` SQLite.
+- `SQLiteOrderRepositoryTest`: ACID transactional order placement and status workflow against `:memory:` SQLite.
+- `SQLiteReviewRepositoryTest`: Review storage and verified delivered purchase checks against `:memory:` SQLite.
+
+---
+
+## 8. AI Chatbot Architecture (Section 9 & 15)
+
+```
+Browser (Floating Chat Widget)
+   |
+   | fetch('/api/v1/chat', POST { "message": "..." })
+   v
+ChatController
+   ├── Validates JSON input and session extraction (Drogon cookie session)
+   └── Returns standard JSON envelope { "success": true, "data": { "reply": "...", "provider": "...", "cached": bool } }
+   |
+   v
+ChatService
+   ├── Input Validation (1-500 characters)
+   ├── Per-Session Rate Limiting (10 messages/minute sliding window guarded by std::mutex)
+   ├── In-Memory Response Caching (std::unordered_map per session ID)
+   └── Domain Context Enrichment (Featured catalog & categories)
+   |
+   v
+ChatProvider (Interface)
+   ├── MockChatProvider: Canned answers for 10+ e-commerce domain FAQs (offline / zero-net mode)
+   └── GeminiChatProvider: Live Google Gemini REST API call server-side via GEMINI_API_KEY
+```
+
+### Configuring Live Gemini API:
+1. Copy `.env.example` to `.env`.
+2. Add your Gemini API key:
+   ```bash
+   export GEMINI_API_KEY="your-gemini-api-key"
+   export AI_CHAT_PROVIDER="gemini"
+   ```
+3. If no key is set or network is unavailable, FaalihaMart automatically degrades to `MockChatProvider` with zero downtime.
