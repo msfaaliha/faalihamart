@@ -26,17 +26,19 @@ RUN apt-get update && apt-get install -y \
     libspdlog-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Limit parallel compilation jobs to 2 to prevent exceeding Vercel's 8GB memory limit
-ARG PARALLEL_JOBS=2
+# Optimize build speed with 4 parallel jobs on Vercel's 8GB runner
+ARG PARALLEL_JOBS=4
 ENV PARALLEL_JOBS=${PARALLEL_JOBS}
 
-# Clone and install Drogon web framework (minimal footprint, capped parallelism)
+# Clone and install Drogon web framework (minimal footprint, Ninja fast build)
 WORKDIR /tmp
 RUN git clone --depth 1 --branch v1.9.9 https://github.com/drogonframework/drogon.git && \
     cd drogon && \
     git submodule update --init --depth 1 && \
     mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release \
+    cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_FLAGS="-O2 -DNDEBUG" \
           -DCMAKE_INSTALL_LIBDIR=lib \
           -DBUILD_EXAMPLES=OFF \
           -DBUILD_TESTING=OFF \
@@ -51,12 +53,15 @@ RUN git clone --depth 1 --branch v1.9.9 https://github.com/drogonframework/drogo
     cmake --install . && \
     cd /tmp && rm -rf drogon
 
-# Build FaalihaMart application (target main server binary only)
+# Build FaalihaMart application (target main server binary only with Ninja)
 WORKDIR /app
 COPY . .
 
 RUN mkdir -p build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
+    cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_FLAGS="-O2 -DNDEBUG" \
+          -DBUILD_TESTING=OFF .. && \
     cmake --build . --config Release --target faalihamart -j${PARALLEL_JOBS}
 
 # Stage 2: Minimal runtime image containing only binary and runtime shared libraries
