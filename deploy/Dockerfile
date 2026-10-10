@@ -24,24 +24,38 @@ RUN apt-get update && apt-get install -y \
     libspdlog-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and install Drogon web framework
+# Limit parallel compilation jobs to prevent exceeding Render's 8GB memory limit
+ARG PARALLEL_JOBS=2
+ENV PARALLEL_JOBS=${PARALLEL_JOBS}
+
+# Clone and install Drogon web framework (minimal footprint, capped parallelism)
 WORKDIR /tmp
-RUN git clone https://github.com/drogonframework/drogon.git && \
+RUN git clone --depth 1 --branch v1.9.9 https://github.com/drogonframework/drogon.git && \
     cd drogon && \
-    git submodule update --init && \
+    git submodule update --init --depth 1 && \
     mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF .. && \
-    make -j$(nproc) && \
-    make install && \
+    cmake -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_LIBDIR=lib \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_TESTING=OFF \
+          -DBUILD_CTL=OFF \
+          -DBUILD_POSTGRESQL=OFF \
+          -DBUILD_MYSQL=OFF \
+          -DBUILD_REDIS=OFF \
+          -DBUILD_BROTLI=OFF \
+          -DBUILD_YAML_CONFIG=OFF \
+          .. && \
+    cmake --build . -j${PARALLEL_JOBS} && \
+    cmake --install . && \
     cd /tmp && rm -rf drogon
 
-# Build FaalihaMart application
+# Build FaalihaMart application (target main server binary only)
 WORKDIR /app
 COPY . .
 
 RUN mkdir -p build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    cmake --build . --config Release -j$(nproc)
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
+    cmake --build . --config Release --target faalihamart -j${PARALLEL_JOBS}
 
 # Stage 2: Minimal runtime image containing only binary and runtime shared libraries
 FROM debian:bookworm-slim AS runtime

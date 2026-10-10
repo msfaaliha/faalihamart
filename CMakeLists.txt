@@ -112,8 +112,11 @@ add_custom_command(TARGET faalihamart POST_BUILD
 )
 
 # Testing
-enable_testing()
-find_package(GTest QUIET)
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
-    add_subdirectory(test)
+option(BUILD_TESTING "Build test suite" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    find_package(GTest QUIET)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
+        add_subdirectory(test)
+    endif()
 endif()
