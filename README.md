@@ -20,7 +20,18 @@ You can view and interact with the full web marketplace immediately:
 3. The server starts at **`http://localhost:8080/index.html`** and opens your browser.
 4. Alternatively, you can open **`static/index.html`** directly in any modern browser. The application includes a self-contained interactive state engine, pre-seeded demo accounts, and integrated AI assistant!
 
-### Option B: Native C++ Drogon HTTP Server
+### Option B: Launch Localhost Publicly via Cloudflare Tunnel
+1. Double-click **`start_cloudflare.bat`** (or execute `.\start_cloudflare.ps1` in PowerShell).
+2. This starts the local server on `http://localhost:8080/index.html` and creates a live public HTTPS link on **`https://*.trycloudflare.com`** via Cloudflare Tunnel (`cloudflared`).
+
+### Option C: Deploy to Cloudflare Pages (`*.pages.dev`)
+- Configuration: [`wrangler.toml`](wrangler.toml) (`pages_build_output_dir = "static"`), [`static/_routes.json`](static/_routes.json), and serverless API endpoints in [`functions/`](functions/).
+- Connect the GitHub repository (`msfaaliha/faalihamart`) in **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git** (set **Build output directory** to `static`), or deploy via Wrangler CLI:
+  ```bash
+  npx wrangler pages deploy static
+  ```
+
+### Option D: Native C++ Drogon HTTP Server
 ```bash
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
