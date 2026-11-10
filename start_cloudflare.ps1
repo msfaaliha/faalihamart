@@ -57,4 +57,4 @@ Write-Host "  Launching FaalihaMart Localhost on Cloudflare Tunnel" -ForegroundC
 Write-Host "  Local URL: http://localhost:$port/index.html" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-& $cloudflaredExe tunnel --no-autoupdate --url "http://localhost:$port" --http-host-header "localhost:$port"
+& $cloudflaredExe tunnel --no-autoupdate --protocol http2 --url "http://localhost:$port" --http-host-header "localhost:$port"
