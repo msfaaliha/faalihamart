@@ -8,9 +8,15 @@ export default function handler(req, res) {
   }
 
   res.status(200).json({
+    success: true,
     status: 'UP',
     db: 'UP',
+    data: {
+      status: 'UP',
+      db: 'UP'
+    },
     platform: 'Vercel Serverless',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    error: null
   });
 }

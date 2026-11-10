@@ -44,9 +44,23 @@ while ($listener.IsListening) {
 
         # Health endpoint
         if ($urlPath -eq "api/v1/health") {
-            $json = '{"success":true,"data":{"status":"UP","db":"UP"},"error":null}'
+            $json = '{"success":true,"status":"UP","db":"UP","data":{"status":"UP","db":"UP"},"platform":"Local Preview Server","error":null}'
             $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-            $response.ContentType = "application/json"
+            $response.ContentType = "application/json; charset=utf-8"
+            $response.ContentLength64 = $bytes.Length
+            $response.StatusCode = 200
+            if ($request.HttpMethod -ne "HEAD") {
+                $response.OutputStream.Write($bytes, 0, $bytes.Length)
+            }
+            $response.OutputStream.Close()
+            continue
+        }
+
+        # AI Chatbot status endpoint
+        if ($urlPath -eq "api/v1/chat/status") {
+            $json = '{"success":true,"data":{"provider":"mock-preview","rate_limit_per_minute":10,"max_message_length":500},"error":null}'
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+            $response.ContentType = "application/json; charset=utf-8"
             $response.ContentLength64 = $bytes.Length
             $response.StatusCode = 200
             if ($request.HttpMethod -ne "HEAD") {
@@ -60,7 +74,7 @@ while ($listener.IsListening) {
         if ($urlPath -eq "api/v1/chat" -or $urlPath -eq "api/chat") {
             $userMsg = ""
             if ($request.HasEntityBody) {
-                $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
+                $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
                 $bodyStr = $reader.ReadToEnd()
                 try {
                     $bodyObj = ConvertFrom-Json $bodyStr
@@ -68,21 +82,22 @@ while ($listener.IsListening) {
                 } catch {}
             }
 
+            $rs = [char]0x20B9
             $q = if ($userMsg) { $userMsg.ToLower() } else { "" }
             $reply = "Hello! Welcome to FaalihaMart. I can assist with products in Electronics, Apparel, and Home & Living, order status tracking (PENDING -> CONFIRMED -> SHIPPED -> DELIVERED), returns, mock payment, or seller registration. How may I help you?"
             
             if ($q -match "headphone|audio|earphone|noise-cancelling") {
-                $reply = "We have the 'Noise-Cancelling Wireless Headphones' by Apex Tech Gear for ₹149.99 (40-hour battery life, spatial audio) in our Electronics category."
+                $reply = "We have the 'Noise-Cancelling Wireless Headphones' by Apex Tech Gear for ${rs}149.99 (40-hour battery life, spatial audio) in our Electronics category."
             } elseif ($q -match "keyboard|rgb|switch") {
-                $reply = "The 'Mechanical Gaming Keyboard RGB' is available for ₹89.99 featuring custom mechanical switches and per-key RGB backlighting."
+                $reply = "The 'Mechanical Gaming Keyboard RGB' is available for ${rs}89.99 featuring custom mechanical switches and per-key RGB backlighting."
             } elseif ($q -match "monitor|screen|4k") {
-                $reply = "Our 'Ultra-Slim 4K USB-C Monitor 27`"' is ₹299.99 with IPS panel, 99% sRGB color gamut, and 65W power delivery."
+                $reply = "Our 'Ultra-Slim 4K USB-C Monitor 27`"' is ${rs}299.99 with IPS panel, 99% sRGB color gamut, and 65W power delivery."
             } elseif ($q -match "hoodie|cotton|jacket") {
-                $reply = "The 'Classic Organic Cotton Hoodie' is ₹49.99 tailored from 100% sustainable organic cotton in the Apparel category."
+                $reply = "The 'Classic Organic Cotton Hoodie' is ${rs}49.99 tailored from 100% sustainable organic cotton in the Apparel category."
             } elseif ($q -match "backpack|bag|laptop") {
-                $reply = "The 'Waterproof Commuter Backpack' is ₹74.99 with weatherproof construction and a 16-inch laptop compartment."
+                $reply = "The 'Waterproof Commuter Backpack' is ${rs}74.99 with weatherproof construction and a 16-inch laptop compartment."
             } elseif ($q -match "candle|tumbler|home") {
-                $reply = "In Home & Living, check out our Soy Wax Candle Set (₹24.99) and Insulated Stainless Steel Tumbler (₹19.99)."
+                $reply = "In Home & Living, check out our Soy Wax Candle Set (${rs}24.99) and Insulated Stainless Steel Tumbler (${rs}19.99)."
             } elseif ($q -match "track|order|status|workflow|shipped|delivered") {
                 $reply = "FaalihaMart orders follow a 4-step workflow: PENDING -> CONFIRMED -> SHIPPED -> DELIVERED. Check the 'My Orders' tab to inspect details!"
             } elseif ($q -match "return|refund|exchange") {
@@ -106,7 +121,7 @@ while ($listener.IsListening) {
             }
             $json = ConvertTo-Json $respData -Depth 4
             $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-            $response.ContentType = "application/json"
+            $response.ContentType = "application/json; charset=utf-8"
             $response.ContentLength64 = $bytes.Length
             $response.StatusCode = 200
             if ($request.HttpMethod -ne "HEAD") {
